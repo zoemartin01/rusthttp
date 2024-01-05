@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use itertools::Itertools;
 
 pub struct Response {
-    pub status: u8,
+    pub status: u16,
     pub protocol_version: String,
     pub reason: String,
     pub headers: HashMap<String, String>,
@@ -32,15 +32,23 @@ impl Response {
             body,
         } = self;
 
-        let formatted_headers = headers
+        let mut final_headers = headers.clone();
+
+        if final_headers.get("Content-Length").is_none() {
+            final_headers.insert("Content-Length".to_string(), body.len().to_string());
+        }
+
+        let formatted_headers = final_headers
             .iter()
-            .map(|(k, v)| format!("{k}: {v}\r\n"))
+            .map(|(k, v)| format!("{k}: {v}"))
             .join("\r\n");
 
         let mut formatted =
             format!("{protocol_version} {status} {reason}\r\n{formatted_headers}\r\n\r\n")
                 .into_bytes();
+
         formatted.append(&mut body.clone());
+
         return formatted;
     }
 }

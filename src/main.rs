@@ -1,5 +1,7 @@
+use std::fs;
 use std::io::Write;
 use std::net::{TcpListener, TcpStream};
+use std::path::Path;
 
 use request::Request;
 
@@ -33,7 +35,35 @@ fn handle_conn(stream: TcpStream) {
     println!("{:#?}", request);
 
     let mut response = Response::default();
-    response.status = 201;
+
+    let mut filepath = if request.path.ends_with("/") {
+        request.path + "index.html"
+    } else {
+        request.path
+    };
+
+    let mut path = Path::new(&format!("static/{filepath}")).to_owned();
+
+    if path.exists() && path.is_dir() {
+        filepath = filepath + "/index.html";
+        path = Path::new(&format!("static/{filepath}")).to_owned();
+    }
+
+    if path.exists() && path.is_file() {
+        let content = fs::read_to_string(format!("static/{filepath}")).unwrap();
+
+        response.status = 200;
+        response.body = content.into_bytes();
+    } else {
+        let content = fs::read_to_string("static/404.html".to_string()).unwrap();
+        response.status = 404;
+        response.body = content.into_bytes();
+        response.reason = "NOT FOUND".to_string();
+    }
+
+    response
+        .headers
+        .insert("Content-Type".to_string(), "text/html".to_string());
 
     send(response, &stream);
 }
