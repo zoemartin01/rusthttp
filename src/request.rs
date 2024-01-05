@@ -1,8 +1,11 @@
-use itertools::Itertools;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::io::{BufRead, BufReader, Read};
 use std::net::TcpStream;
 
+use itertools::Itertools;
+
+#[derive(Debug)]
 pub struct Request {
     pub method: String,
     pub protocol_version: String,

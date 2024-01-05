@@ -1,11 +1,12 @@
-use std::io::{BufRead, Read, Write};
+use std::io::Write;
 use std::net::{TcpListener, TcpStream};
-use std::str::from_utf8;
 
-use itertools::Itertools;
 use request::Request;
 
+use crate::response::Response;
+
 mod request;
+mod response;
 
 fn listen(port: u16) {
     let listener = TcpListener::bind(format!("127.0.0.1:{port}")).unwrap();
@@ -17,19 +18,24 @@ fn listen(port: u16) {
         };
 
         handle_conn(stream);
-
-        println!("Connection established!");
     }
 }
 
-fn handle_conn(mut stream: TcpStream) {
+fn send(response: Response, mut tcp_stream: &TcpStream) {
+    tcp_stream
+        .write_all(response.as_bytes().as_slice())
+        .unwrap();
+}
+
+fn handle_conn(stream: TcpStream) {
     let request = Request::from_stream(&stream);
 
-    println!("{:#?}", from_utf8(&request.body));
+    println!("{:#?}", request);
 
-    let response = "HTTP/1.1 200 OK\r\n\r\n";
+    let mut response = Response::default();
+    response.status = 201;
 
-    stream.write_all(response.as_bytes()).unwrap();
+    send(response, &stream);
 }
 
 fn main() {
